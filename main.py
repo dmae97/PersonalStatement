@@ -8,7 +8,8 @@ import os
 
 # .env 파일에서 OpenAI API 키 로딩
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv(
+    "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")
 openai.api_key = OPENAI_API_KEY
 
 # Streamlit 앱 제목 설정
