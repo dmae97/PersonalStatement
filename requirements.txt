@@ -1,5 +1,5 @@
 langchain
 openai
 streamlit
-qrcodepip
+qrcode
 python-dotenv==1.0.0
