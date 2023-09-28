@@ -1,3 +1,6 @@
+import base64
+from io import BytesIO
+import qrcode
 import streamlit as st
 import openai
 from dotenv import load_dotenv
@@ -54,7 +57,27 @@ if st.button('답변받기'):
             f"📘 **AI의 답변:** {response.choices[0].text.strip()}", unsafe_allow_html=True)
 
 
-# from langchain.llms import OpenAI
-# llm = OpenAI()
-# reuslt = llm.predict("내가 좋아하는 동물은")
-# print(reuslt)
+# ... 기존 코드 ...
+
+# 비트코인 주소를 위한 QR 코드 생성
+bitcoin_address = "3CMCKgTMcLsz4mMC4veBREio3YzppVeXGP"
+qr = qrcode.QRCode(version=1, box_size=10, border=5)
+qr.add_data(bitcoin_address)
+qr.make(fit=True)
+img = qr.make_image(fill_color="black", back_color="white")
+
+# 이미지를 스트림릿에 표시할 수 있도록 변환
+buf = BytesIO()
+img.save(buf, format="PNG")
+image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+
+st.write(f"""
+### 도네이션 받기
+
+이 서비스가 도움이 되었다면, 아래의 비트코인 주소나 QR 코드를 통해 도네이션을 고려해주세요:
+
+비트코인 주소: `{bitcoin_address}`
+
+![QR Code](data:image/png;base64,{image_base64})
+
+""", unsafe_allow_html=True)
