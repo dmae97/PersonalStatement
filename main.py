@@ -52,7 +52,3 @@ if st.button('답변받기'):
         # 결과를 스트림릿에 출력
         st.markdown(
             f"📘 **AI의 답변:** {response.choices[0].text.strip()}", unsafe_allow_html=True)
-
-
-st.caption('이 서비스가 도움이 되었다면, 아래의 비트코인 주소나 QR 코드를 통해 도네이션을 고려해주세요:')
-st.caption('비트코인 주소: `{3CMCKgTMcLsz4mMC4veBREio3YzppVeXGP}`')
