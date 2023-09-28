@@ -2,6 +2,5 @@ langchain
 openai
 streamlit
 qrcode
-BytesIO
 base64
 os
