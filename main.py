@@ -8,34 +8,61 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
-st.set_page_config(page_title="자기소개서 작성 도우미", page_icon="📝", layout='centered')
+def get_feedback_and_examples(user_title, user_content):
+    response = openai.Completion.create(
+        model="gpt-3.5-turbo-instruct-0914",
+        prompt=f"사용자의 자기소개서 내용을 기반으로 구체적인 피드백과 해당 피드백을 바탕으로 한 개선 예시를 제공해주세요. 피드백과 예시는 명확하게 구분해주세요. 내용: {user_content}."
 
+,
+        max_tokens=2000,
+        temperature=0.01,
+        top_p=1
+    )
+    
+    text = response.choices[0].text.strip()
+    
+    # "개선"이라는 키워드가 언급된 횟수를 계산합니다.
+    improvement_count = text.lower().count("개선")
+
+    # 개선사항이 하나도 없을 경우 예시 부분을 제거합니다.
+    if improvement_count < 1:
+        index_example_start = text.lower().find("예시:")
+        if index_example_start != -1:
+            text = text[:index_example_start].strip()
+
+    # 피드백의 중요도에 따라 합격 여부를 판단합니다.
+    if "문제" in text or "개선" in text:
+        verdict = "🔴 합격 여부: 불합격 (자기소개서에 개선이 필요합니다.)"
+    else:
+        verdict = "🟢 합격 여부: 합격 가능"
+
+    return text, verdict
+
+
+
+# Streamlit UI
 st.title('자기소개서 작성 도우미 📝')
 
-# Google AdSense 코드 삽입
-adsense_code = """
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4792563201867264"
-     crossorigin="anonymous"></script>
-"""
-st.markdown(adsense_code, unsafe_allow_html=True)
+# 제목 입력창
+user_title = st.text_area("자기소개서 제목을 입력해주세요:", placeholder="ex) 지원동기", key="user_title_key")
 
-st.markdown("""
-<font size="4">🔍 **안내**: 이 챗봇은 자기소개서 작성의 참고를 위해 제공됩니다. 
-실제 자기소개서 제출 전에는 꼼꼼한 확인과 수정이 필요합니다.</font>
-""", unsafe_allow_html=True)
+# 내용 입력창
+user_content = st.text_area("자기소개서 내용을 2000자 이내로 입력해주세요:", 
+                            placeholder="ex) 돈 벌기 위해 지원하게 됐는데요...",
+                            height=300, key="user_content_key")
 
-user_input = st.text_area("자기소개서의 초안이나 구체적인 질문을 입력해주세요:", height=200)
+char_count = len(user_title) + len(user_content)
+st.write(f"입력한 글자 수: {char_count}/2000")
 
-if st.button('답변받기'):
-    with st.spinner('답변을 생성하는 중...'):
-        messages = [
-    {"role": "system", "content": "당신은 사용자의 자기소개서에 현실적인 피드백을 제공하며, 자기소개서 예시 몇 가지도 반드시 작성해주고당신이 면접관이라면 합격시킬 것인지 판단해 줘."},
-    {"role": "user", "content": user_input}
-]
+if char_count > 2000:
+    st.write("⚠️ 자기소개서 제목과 내용 합쳐서 2000자 이내로 작성해주세요!")
+
+submit_button = st.button('답변받기')
+
+if submit_button:
+    with st.spinner('답변 생성 중...'):
+        feedback, verdict = get_feedback_and_examples(user_title, user_content)
+    st.markdown(feedback, unsafe_allow_html=True)
+    st.markdown(verdict, unsafe_allow_html=True)
 
 
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-16k-0613",
-            messages=messages
-        )
-        st.markdown(f"📘 **AI의 답변:** {response['choices'][0]['message']['content']}", unsafe_allow_html=True)
