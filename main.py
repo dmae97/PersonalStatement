@@ -64,5 +64,27 @@ if submit_button:
         feedback, verdict = get_feedback_and_examples(user_title, user_content)
     st.markdown(feedback, unsafe_allow_html=True)
     st.markdown(verdict, unsafe_allow_html=True)
-
+donation_link = "https://toss.me/dmae97/5000"
+st.markdown(f'''
+<a href="{donation_link}" target="_blank">
+<button style="
+    background: linear-gradient(to right, #FF4500, #FF6347);
+    color:white;
+    padding:10px 20px;
+    font-size:16px;
+    border:none;
+    cursor:pointer;
+    border-radius: 20px;
+    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease 0s;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    width: 300x;
+    height: 50x;"
+    onmouseover="this.style.boxShadow='0px 15px 20px rgba(46, 229, 157, 0.4)'; this.style.backgroundColor='#FF6347'; this.style.transform='translateY(-7px)'"
+    onmouseout="this.style.boxShadow='0px 8px 15px rgba(0, 0, 0, 0.1)'; this.style.backgroundColor='#FF4500'; this.style.transform='translateY(0px)'">
+    서비스가 도움이 되셨다면, 작은 응원 부탁드립니다!
+</button></a>''', unsafe_allow_html=True)
 
