@@ -171,9 +171,9 @@ ad_code = """
      data-ad-slot="여기에 슬롯 번호를 입력하세요."
      data-ad-format="auto"
      data-full-width-responsive="true"></ins>
-<script>"""
+<script>
      (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
+</script>"""
 """
 
 st.markdown(ad_code, unsafe_allow_html=True)
