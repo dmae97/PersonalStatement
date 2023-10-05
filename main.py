@@ -174,7 +174,6 @@ ad_code = """
 <script>
      (adsbygoogle = window.adsbygoogle || []).push({});
 </script>"""
-"""
 
 st.markdown(ad_code, unsafe_allow_html=True)
 
