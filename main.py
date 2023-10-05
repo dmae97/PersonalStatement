@@ -164,14 +164,14 @@ for index, message_data in enumerate(oneline_messages):
 ad_code = """
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4792563201867264"
      crossorigin="anonymous"></script>
-"""
+
 <ins class="adsbygoogle"
      style="display:block"
      data-ad-client="ca-pub-4792563201867264"
      data-ad-slot="여기에 슬롯 번호를 입력하세요."
      data-ad-format="auto"
      data-full-width-responsive="true"></ins>
-<script>
+<script>"""
      (adsbygoogle = window.adsbygoogle || []).push({});
 </script>
 """
