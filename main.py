@@ -1,12 +1,18 @@
 import streamlit as st
 import openai
-from dotenv import load_dotenv
+import json
 import os
+from dotenv import load_dotenv
+import streamlit as st
 
-# .env 파일에서 OpenAI API 키 로딩
+
+# Load OpenAI API key
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
+
+
+# Function to get feedback and examples
 
 def get_feedback_and_examples(user_title, user_content):
     response = openai.Completion.create(
@@ -16,9 +22,9 @@ def get_feedback_and_examples(user_title, user_content):
         temperature=0.01,
         top_p=1
     )
-    
+
     text = response.choices[0].text.strip()
-    
+
     # "개선"이라는 키워드가 언급된 횟수를 계산합니다.
     improvement_count = text.lower().count("개선")
 
@@ -36,14 +42,16 @@ def get_feedback_and_examples(user_title, user_content):
 
     return text, verdict
 
+
 # Streamlit UI
 st.title('자기소개서 작성 도우미 📝')
 
 # 제목 입력창
-user_title = st.text_area("자기소개서 제목을 입력해주세요:", placeholder="ex) 지원동기", key="user_title_key")
+user_title = st.text_area(
+    "자기소개서 제목을 입력해주세요:", placeholder="ex) 지원동기", key="user_title_key")
 
 # 내용 입력창
-user_content = st.text_area("자기소개서 내용을 2000자 이내로 입력해주세요:", 
+user_content = st.text_area("자기소개서 내용을 2000자 이내로 입력해주세요:",
                             placeholder="ex) 돈 벌기 위해 지원하게 됐는데요...",
                             height=300, key="user_content_key")
 
@@ -62,9 +70,6 @@ if submit_button:
     st.markdown(verdict, unsafe_allow_html=True)
 
 # 사이드바
-import streamlit as st
-import openai
-import json
 
 with st.sidebar.form(key='ask_question'):
     question = st.text_input('질문:')
@@ -88,6 +93,8 @@ with st.sidebar.form(key='ask_question'):
         st.sidebar.markdown(answer)
 
 # 사이드바에 한 줄 게시판 기능 추가
+
+
 def load_oneline_messages():
     try:
         with open('oneline_messages.json', 'r') as f:
@@ -107,11 +114,13 @@ def save_oneline_message(message):
     with open('oneline_messages.json', 'w') as f:
         json.dump(messages, f)
 
+
 def increase_like(index):
     messages = load_oneline_messages()
     messages[index]["likes"] += 1
     with open('oneline_messages.json', 'w') as f:
         json.dump(messages, f)
+
 
 st.sidebar.header('한 줄 게시판')
 with st.sidebar.form(key='oneline_board_form'):
@@ -122,24 +131,28 @@ with st.sidebar.form(key='oneline_board_form'):
 # 관리자 비밀번호 설정 (실제로 사용할 때는 이 비밀번호를 안전하게 관리하세요!)
 ADMIN_PASSWORD = "Dmae!@1997"
 
+
 def delete_oneline_message(index):
     messages = load_oneline_messages()
     del messages[index]  # 지정된 인덱스의 메시지를 삭제
     with open('oneline_messages.json', 'w') as f:
-        json.dump(messages, f)  
+        json.dump(messages, f)
+
+
 # 저장된 메시지들을 사이드바에 출력
 oneline_messages = load_oneline_messages()
 for index, message_data in enumerate(oneline_messages):
     message = message_data["content"]
     likes = message_data.get("likes", 0)  # 이 부분을 수정
-    
+
     st.sidebar.write(message)
     if st.sidebar.button(f'❤️ {likes}', key=f"like_{index}"):
         increase_like(index)
         st.experimental_rerun()
 
     if st.sidebar.button("Delete", key=f"delete_{index}"):
-        password = st.sidebar.text_input("Enter admin password:", type="password")
+        password = st.sidebar.text_input(
+            "Enter admin password:", type="password")
         if password == ADMIN_PASSWORD:
             delete_oneline_message(index)
             st.sidebar.success("Message deleted!")
@@ -147,9 +160,14 @@ for index, message_data in enumerate(oneline_messages):
         else:
             st.sidebar.warning("Incorrect password!")
 
-    st.sidebar.write("---")   
-    
-    
+    st.sidebar.write("---")
+ad_code = """
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4792563201867264"
+     crossorigin="anonymous"></script>
+"""
+st.markdown(ad_code, unsafe_allow_html=True)
+
+
 # Insert the donation button at the desired location
 donation_link = "https://toss.me/dmae97/5000"
 st.markdown(f'''
