@@ -172,8 +172,8 @@ ad_code = """
      data-ad-format="auto"
      data-full-width-responsive="true"></ins>
 <script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>"""
+     (adsbygoogle = window.adsbygoogle || []).push({});"""
+</script>
 
 st.markdown(ad_code, unsafe_allow_html=True)
 
