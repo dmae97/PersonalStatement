@@ -83,7 +83,7 @@ with st.sidebar.form(key='ask_question'):
         ]
 
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-16k",
+            model="gpt-4",
             messages=messages
         )
         answer = response.choices[0].message['content'].strip()
