@@ -17,7 +17,7 @@ openai.api_key = OPENAI_API_KEY
 def get_feedback_and_examples(user_title, user_content):
     response = openai.Completion.create(
         model="gpt-3.5-turbo-instruct-0914",
-        prompt=f"사용자의 자기소개서 내용을 기반으로 구체적인 피드백과 해당 피드백을 바탕으로 한 개선 예시를 제공해주세요. 피드백과 예시는 명확하게 구분해주세요. 내용: {user_content}.",
+        prompt=f"사용자의 자기소개서 내용을 기반으로 구체적인 피드백과 해당 피드백을 바탕으로 한 개선 예시를 제공해주세요. 반복되는 글짜는 개선이 필요하다고 얘기해주세요 피드백과 예시는 명확하게 구분해주세요. 내용: {user_content}.",
         max_tokens=2000,
         temperature=0.01,
         top_p=0.1
