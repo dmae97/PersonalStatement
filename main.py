@@ -20,38 +20,35 @@ def get_feedback_and_examples(user_title, user_content):
         prompt=f"사용자의 자기소개서 내용을 기반으로 구체적인 피드백과 해당 피드백을 바탕으로 한 개선 예시를 제공해주세요. 피드백과 예시는 명확하게 구분해주세요. 내용: {user_content}.",
         max_tokens=2000,
         temperature=0.01,
-        top_p=1
+        top_p=0.1
     )
-
+    
     text = response.choices[0].text.strip()
 
-    # "개선"이라는 키워드가 언급된 횟수를 계산합니다.
-    improvement_count = text.lower().count("개선")
+    def contains_weird_characters(text):
+        weird_characters = ['ㅋ', 'ㅎ', 'ㅜ', 'ㅠ', 'ㅡ', 'ㅉ', 'ㅊ', 'ㅈ', 'ㅌ', 'ㄷ', 'ㄸ', 'ㄲ', 'ㄱ', 'ㄴ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅆ', 'ㅅ', 'ㅇ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ', 'ㅓ', 'ㅏ', 'ㅣ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅟ', 'ㅞ', 'ㅝ', 'ㅢ', 'ㅡ']
+        for char in weird_characters:
+            if char in text:
+                return True
+        return False
 
-    # 개선사항이 하나도 없을 경우 예시 부분을 제거합니다.
-    if improvement_count < 1:
-        index_example_start = text.lower().find("예시:")
-        if index_example_start != -1:
-            text = text[:index_example_start].strip()
-
-    # 피드백의 중요도에 따라 합격 여부를 판단합니다.
-    if "문제" in text or "개선" in text:
+    if "문제" in text or "개선" in text or "이상한단어" in text or "구체적" in text or "알수없는 문자" in text or "부족" in text or contains_weird_characters(text):
         verdict = "🔴 합격 여부: 불합격 (자기소개서에 개선이 필요합니다.)"
     else:
-        verdict = "🟢 합격 여부: 합격 가능"
+        verdict = "🟢 합격 여부: 합격 가능(정확하지 않을수 있습니다)"
 
     return text, verdict
+
 
 
 # Streamlit UI
 st.title('자기소개서 작성 도우미 📝')
 
 # 제목 입력창
-user_title = st.text_area(
-    "자기소개서 제목을 입력해주세요:", placeholder="ex) 지원동기", key="user_title_key")
+user_title = st.text_area("자기소개서 제목을 입력해주세요:", placeholder="ex) 지원동기", key="user_title_key")
 
 # 내용 입력창
-user_content = st.text_area("자기소개서 내용을 2000자 이내로 입력해주세요:",
+user_content = st.text_area("자기소개서 내용을 2000자 이내로 입력해주세요:", 
                             placeholder="ex) 돈 벌기 위해 지원하게 됐는데요...",
                             height=300, key="user_content_key")
 
@@ -70,6 +67,9 @@ if submit_button:
     st.markdown(verdict, unsafe_allow_html=True)
 
 # 사이드바
+import streamlit as st
+import openai
+import json
 
 with st.sidebar.form(key='ask_question'):
     question = st.text_input('질문:')
@@ -93,8 +93,6 @@ with st.sidebar.form(key='ask_question'):
         st.sidebar.markdown(answer)
 
 # 사이드바에 한 줄 게시판 기능 추가
-
-
 def load_oneline_messages():
     try:
         with open('oneline_messages.json', 'r') as f:
@@ -114,13 +112,11 @@ def save_oneline_message(message):
     with open('oneline_messages.json', 'w') as f:
         json.dump(messages, f)
 
-
 def increase_like(index):
     messages = load_oneline_messages()
     messages[index]["likes"] += 1
     with open('oneline_messages.json', 'w') as f:
         json.dump(messages, f)
-
 
 st.sidebar.header('한 줄 게시판')
 with st.sidebar.form(key='oneline_board_form'):
@@ -131,28 +127,24 @@ with st.sidebar.form(key='oneline_board_form'):
 # 관리자 비밀번호 설정 (실제로 사용할 때는 이 비밀번호를 안전하게 관리하세요!)
 ADMIN_PASSWORD = "Dmae!@1997"
 
-
 def delete_oneline_message(index):
     messages = load_oneline_messages()
     del messages[index]  # 지정된 인덱스의 메시지를 삭제
     with open('oneline_messages.json', 'w') as f:
-        json.dump(messages, f)
-
-
+        json.dump(messages, f)  
 # 저장된 메시지들을 사이드바에 출력
 oneline_messages = load_oneline_messages()
 for index, message_data in enumerate(oneline_messages):
     message = message_data["content"]
     likes = message_data.get("likes", 0)  # 이 부분을 수정
-
+    
     st.sidebar.write(message)
     if st.sidebar.button(f'❤️ {likes}', key=f"like_{index}"):
         increase_like(index)
         st.experimental_rerun()
 
     if st.sidebar.button("Delete", key=f"delete_{index}"):
-        password = st.sidebar.text_input(
-            "Enter admin password:", type="password")
+        password = st.sidebar.text_input("Enter admin password:", type="password")
         if password == ADMIN_PASSWORD:
             delete_oneline_message(index)
             st.sidebar.success("Message deleted!")
@@ -160,24 +152,10 @@ for index, message_data in enumerate(oneline_messages):
         else:
             st.sidebar.warning("Incorrect password!")
 
-    st.sidebar.write("---")
-ad_code = """
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4792563201867264"
-     crossorigin="anonymous"></script>
-
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-4792563201867264"
-     data-ad-slot="여기에 슬롯 번호를 입력하세요."
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-"""
-st.markdown(ad_code, unsafe_allow_html=True)
-
-
+    st.sidebar.write("---")   
+    
+    
+    
 # Insert the donation button at the desired location
 donation_link = "https://toss.me/dmae97/5000"
 st.markdown(f'''
@@ -202,3 +180,5 @@ st.markdown(f'''
     onmouseout="this.style.boxShadow='0px 8px 15px rgba(0, 0, 0, 0.1)'; this.style.backgroundColor='#FF4500'; this.style.transform='translateY(0px)'">
     서비스가 도움이 되셨다면, 작은 응원 부탁드립니다!
 </button></a>''', unsafe_allow_html=True)
+
+
