@@ -3,3 +3,148 @@ openai
 streamlit
 qrcode
 python-dotenv==1.0.0
+ + aiohappyeyeballs==2.4.3
+
+ + aiohttp==3.11.2
+
+ + aiosignal==1.3.1
+
+ + altair==5.4.1
+
+ + annotated-types==0.7.0
+
+ + anyio==4.6.2.post1
+
+ +[2024-11-18 08:08:48.272342]  attrs==24.2.0
+
+ + blinker==1.9.0
+
+ + cachetools==5.5.0
+
+ + certifi[2024-11-18 08:08:48.272531] ==2024.8.30
+
+ + charset-normalizer==3.4.0
+
+ + click==8.1.7
+
+ + distro==1.9.0[2024-11-18 08:08:48.273685] 
+
+ + frozenlist==1.5.0
+
+ +[2024-11-18 08:08:48.273915]  gitdb==4.0.11
+
+ + gitpython==3.1.43
+
+ + greenlet==3.1.1
+
+ + h11==0.14.0
+
+ + httpcore==1.0.7
+
+ + httpx==0.27.2
+
+ + idna==3.10
+
+ + jinja2==3.1.4
+
+ + jiter==0.7.1
+
+ + jsonpatch==1.33
+
+ + jsonpointer==3.0.0
+
+ + jsonschema[2024-11-18 08:08:48.274303] ==4.23.0
+
+ + jsonschema-specifications==2024.10.1
+
+ + langchain==0.3.7
+
+ + langchain-core==0.3.19
+
+ + langchain-text-splitters==0.3.2
+
+ + langsmith==0.1.143[2024-11-18 08:08:48.274540] 
+
+ + markdown-it-py==3.0.0
+
+ + markupsafe==3.0.2
+
+ + mdurl==0.1.2
+
+ + multidict==6.1.0
+
+ + narwhals==1.13.5
+
+ [2024-11-18 08:08:48.274809] + numpy==1.26.4
+
+ + openai==1.54.4
+
+ + orjson==3.10.11
+
+ + packaging==24.2
+
+ + pandas[2024-11-18 08:08:48.274986] ==2.2.3
+
+ + pillow==11.0.0
+
+ + propcache==0.2.0
+
+ + protobuf==5.28.3
+
+ + pyarrow==18.0.0
+
+ + pydantic==2.9.2[2024-11-18 08:08:48.275178] 
+
+ + pydantic-core==2.23.4
+
+ + pydeck==0.9.1
+
+ + pygments==2.18.0
+
+ + python-dateutil==2.9.0.post0
+
+ + [2024-11-18 08:08:48.275343] python-dotenv==1.0.0
+
+ + pytz==2024.2
+
+ + pyyaml==6.0.2
+
+ + qrcode==8.0
+
+ + referencing==0.35.1
+
+ [2024-11-18 08:08:48.275557] + requests==2.32.3
+
+ + requests-toolbelt==1.0.0
+
+ + rich==13.9.4
+
+ + rpds-py==0.21.0
+
+ + six==1.16.0
+
+ + [2024-11-18 08:08:48.275741] smmap==5.0.1
+
+ + sniffio==1.3.1
+
+ + sqlalchemy==2.0.36
+
+ + streamlit==1.40.1
+
+ + tenacity==9.0.0
+
+ +[2024-11-18 08:08:48.275911]  toml==0.10.2
+
+ + tornado==6.4.1
+
+ + tqdm==4.67.0
+
+ + typing-extensions==4.12.2[2024-11-18 08:08:48.285627] 
+
+ + [2024-11-18 08:08:48.285919] tzdata==2024.2
+
+ + urllib3==2.2.3
+
+ + watchdog==6.0.0
+
+ +[2024-11-18 08:08:48.286221]  yarl==1.17.2
