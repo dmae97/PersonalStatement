@@ -1,0 +1,18 @@
+# Private individual user cursor rules
+.cursor/rules/_*.mdc
+
+# Documentation and templates
+xnotes/
+docs/
+.cursor/rules/workflow-agile.md
+.cursor/rules/template-story.md
+.cursor/rules/template-prd.md
+.cursor/rules/template-arch.md
+.cursor/rules/project-idea-prompt.md
+.cursor/rules/git-push-command.md
+.cursor/rules/903-story-template.mdc
+.cursor/rules/902-arch-template.mdc
+.cursor/rules/901-prd-template.mdc
+.cursor/rules/801-workflow-agile.mdc
+.cursor/rules/400-md-docs.mdc
+.cursor/rules/000-cursor-rules.mdc

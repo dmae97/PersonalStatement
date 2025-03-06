@@ -1,184 +1,613 @@
 import streamlit as st
 import openai
+from openai import OpenAI
+import google.generativeai as genai
+import anthropic
 import json
 import os
 from dotenv import load_dotenv
-import streamlit as st
+import time
+import re
+from typing import Dict, List, Optional, Union, Any
+import uuid
+import base64
+from io import BytesIO
+from PIL import Image
+import requests
 
-
-# Load OpenAI API key
+# Load environment variables
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai.api_key = OPENAI_API_KEY
 
+# Set page configuration
+st.set_page_config(
+    page_title="AI Model Playground",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-# Function to get feedback and examples
-
-def get_feedback_and_examples(user_title, user_content):
-    response = openai.Completion.create(
-        model="gpt-3.5-turbo-instruct-0914",
-        prompt=f"사용자의 자기소개서 내용을 기반으로 구체적인 피드백과 해당 피드백을 바탕으로 한 개선 예시를 제공해주세요. 반복되는 글짜는 개선이 필요하다고 얘기해주세요 피드백과 예시는 명확하게 구분해주세요. 내용: {user_content}.",
-        max_tokens=2000,
-        temperature=0.01,
-        top_p=0.1
-    )
+# Custom CSS for better styling
+st.markdown("""
+<style>
+    /* Main container styling */
+    .main {
+        background-color: #f8f9fa;
+    }
     
-    text = response.choices[0].text.strip()
+    /* Header styling */
+    .main-header {
+        font-family: 'Roboto', sans-serif;
+        color: #1E88E5;
+        text-align: center;
+        padding: 1rem 0;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    
+    /* Card styling */
+    .stCard {
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        background-color: white;
+    }
+    
+    /* Button styling */
+    .stButton>button {
+        border-radius: 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Input field styling */
+    .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+        border-radius: 5px;
+        border: 1px solid #e0e0e0;
+    }
+    
+    /* Sidebar styling */
+    .sidebar .sidebar-content {
+        background-color: #f1f3f4;
+    }
+    
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        border-radius: 4px 4px 0px 0px;
+        padding: 10px 16px;
+        background-color: #f1f3f4;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #1E88E5 !important;
+        color: white !important;
+    }
+    
+    /* Chat container */
+    .chat-container {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 1rem;
+        height: 400px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+        background-color: #f8f9fa;
+    }
+    
+    /* Chat message */
+    .user-message {
+        background-color: #DCF8C6;
+        padding: 10px 15px;
+        border-radius: 15px 15px 0 15px;
+        margin: 5px 0;
+        max-width: 80%;
+        align-self: flex-end;
+        margin-left: auto;
+    }
+    
+    .bot-message {
+        background-color: #FFFFFF;
+        padding: 10px 15px;
+        border-radius: 15px 15px 15px 0;
+        margin: 5px 0;
+        max-width: 80%;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Model selection card */
+    .model-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .model-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .selected-model {
+        border: 2px solid #1E88E5;
+        background-color: #E3F2FD;
+    }
+    
+    /* Footer styling */
+    .footer {
+        text-align: center;
+        padding: 1rem 0;
+        margin-top: 2rem;
+        border-top: 1px solid #e0e0e0;
+        font-size: 0.8rem;
+        color: #757575;
+    }
+    
+    /* Loading animation */
+    .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 1rem 0;
+    }
+    
+    /* Code block styling */
+    pre {
+        background-color: #f1f3f4;
+        padding: 1rem;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+    
+    code {
+        font-family: 'Courier New', monospace;
+    }
+    
+    /* Image styling */
+    .generated-image {
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+</style>
+""", unsafe_allow_html=True)
 
-    def contains_weird_characters(text):
-        weird_characters = ['ㅋ', 'ㅎ', 'ㅜ', 'ㅠ', 'ㅡ', 'ㅉ', 'ㅊ', 'ㅈ', 'ㅌ', 'ㄷ', 'ㄸ', 'ㄲ', 'ㄱ', 'ㄴ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅆ', 'ㅅ', 'ㅇ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ', 'ㅓ', 'ㅏ', 'ㅣ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅟ', 'ㅞ', 'ㅝ', 'ㅢ', 'ㅡ']
-        for char in weird_characters:
-            if char in text:
-                return True
-        return False
+# Session state initialization
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'api_keys' not in st.session_state:
+    st.session_state.api_keys = {
+        'openai': '',
+        'google': '',
+        'anthropic': '',
+    }
+if 'current_model' not in st.session_state:
+    st.session_state.current_model = 'openai/gpt-3.5-turbo'
+if 'temperature' not in st.session_state:
+    st.session_state.temperature = 0.7
+if 'max_tokens' not in st.session_state:
+    st.session_state.max_tokens = 1000
 
-    if "문제" in text or "개선" in text or "이상한단어" in text or "구체적" in text or "알수없는 문자" in text or "부족" in text or contains_weird_characters(text):
-        verdict = "🔴 합격 여부: 불합격 (자기소개서에 개선이 필요합니다.)"
+# Helper functions
+def get_model_provider(model_name: str) -> str:
+    """Extract provider from model name."""
+    return model_name.split('/')[0]
+
+def format_message(message: str, is_user: bool) -> str:
+    """Format message with appropriate styling."""
+    if is_user:
+        return f'<div class="user-message">{message}</div>'
     else:
-        verdict = "🟢 합격 여부: 합격 가능(정확하지 않을수 있습니다)"
+        return f'<div class="bot-message">{message}</div>'
 
-    return text, verdict
+def display_chat_history():
+    """Display chat history with styling."""
+    chat_container = st.container()
+    with chat_container:
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        for message in st.session_state.chat_history:
+            st.markdown(
+                format_message(message['content'], message['is_user']),
+                unsafe_allow_html=True
+            )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-
-
-# Streamlit UI
-st.title('자기소개서 작성 도우미 📝')
-
-# 제목 입력창
-user_title = st.text_area("자기소개서 제목을 입력해주세요:", placeholder="ex) 지원동기", key="user_title_key")
-
-# 내용 입력창
-user_content = st.text_area("자기소개서 내용을 2000자 이내로 입력해주세요:", 
-                            placeholder="ex) 돈 벌기 위해 지원하게 됐는데요...",
-                            height=300, key="user_content_key")
-
-char_count = len(user_title) + len(user_content)
-st.write(f"입력한 글자 수: {char_count}/2000")
-
-if char_count > 2000:
-    st.warning("⚠️ 자기소개서 제목과 내용 합쳐서 2000자 이내로 작성해주세요!")
-
-submit_button = st.button('답변받기')
-
-if submit_button:
-    with st.spinner('답변 생성 중...'):
-        feedback, verdict = get_feedback_and_examples(user_title, user_content)
-    st.markdown(feedback, unsafe_allow_html=True)
-    st.markdown(verdict, unsafe_allow_html=True)
-
-# 사이드바
-import streamlit as st
-import openai
-import json
-
-with st.sidebar.form(key='ask_question'):
-    question = st.text_input('질문:')
-    submit_question = st.form_submit_button('질문하기')
-
-    if submit_question and question:
-        # OpenAI API를 사용하여 질문에 대한 답변을 생성합니다.
-        messages = [
-            {"role": "system", "content": "이 웹사이트는 자기소개서 작성을 도와주는 사이트입니다. 그리고 질문의 답변을 매우 매우 짧고 간단 하게 100자 이내에 대답해주세요."},
-            {"role": "user", "content": question}
-        ]
-
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=messages
-        )
-        answer = response.choices[0].message['content'].strip()
-
-        # 답변을 사이드바에 표시합니다.
-        st.sidebar.markdown('**답변:**')
-        st.sidebar.markdown(answer)
-
-# 사이드바에 한 줄 게시판 기능 추가
-def load_oneline_messages():
-    try:
-        with open('oneline_messages.json', 'r') as f:
-            messages = json.load(f)
-            # 각 메시지에 "likes" 키가 있는지 확인
-            for message in messages:
-                if "likes" not in message:
-                    message["likes"] = 0
-            return messages
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-
-def save_oneline_message(message):
-    messages = load_oneline_messages()
-    messages.append({"content": message, "likes": 0})
-    with open('oneline_messages.json', 'w') as f:
-        json.dump(messages, f)
-
-def increase_like(index):
-    messages = load_oneline_messages()
-    messages[index]["likes"] += 1
-    with open('oneline_messages.json', 'w') as f:
-        json.dump(messages, f)
-
-st.sidebar.header('한 줄 게시판')
-with st.sidebar.form(key='oneline_board_form'):
-    message = st.text_area("여기에 메시지를 남겨주세요:", max_chars=100)
-    if st.form_submit_button('남기기'):
-        save_oneline_message(message)
-        st.sidebar.success("메시지가 게시판에 저장되었습니다!")
-# 관리자 비밀번호 설정 (실제로 사용할 때는 이 비밀번호를 안전하게 관리하세요!)
-ADMIN_PASSWORD = "Dmae!@1997"
-
-def delete_oneline_message(index):
-    messages = load_oneline_messages()
-    del messages[index]  # 지정된 인덱스의 메시지를 삭제
-    with open('oneline_messages.json', 'w') as f:
-        json.dump(messages, f)  
-# 저장된 메시지들을 사이드바에 출력
-oneline_messages = load_oneline_messages()
-for index, message_data in enumerate(oneline_messages):
-    message = message_data["content"]
-    likes = message_data.get("likes", 0)  # 이 부분을 수정
+def generate_response(prompt: str, model: str, temperature: float, max_tokens: int) -> str:
+    """Generate response from selected AI model."""
+    provider = get_model_provider(model)
+    model_name = model.split('/')[1]
     
-    st.sidebar.write(message)
-    if st.sidebar.button(f'❤️ {likes}', key=f"like_{index}"):
-        increase_like(index)
+    try:
+        if provider == 'openai':
+            if not st.session_state.api_keys['openai']:
+                return "⚠️ OpenAI API key is not set. Please add your API key in the sidebar."
+            
+            client = OpenAI(api_key=st.session_state.api_keys['openai'])
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            return response.choices[0].message.content
+            
+        elif provider == 'google':
+            if not st.session_state.api_keys['google']:
+                return "⚠️ Google API key is not set. Please add your API key in the sidebar."
+            
+            genai.configure(api_key=st.session_state.api_keys['google'])
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            return response.text
+            
+        elif provider == 'anthropic':
+            if not st.session_state.api_keys['anthropic']:
+                return "⚠️ Anthropic API key is not set. Please add your API key in the sidebar."
+            
+            client = anthropic.Anthropic(api_key=st.session_state.api_keys['anthropic'])
+            message = client.messages.create(
+                model=model_name,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return message.content[0].text
+            
+        else:
+            return f"Provider {provider} is not supported."
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+# Sidebar for API keys and settings
+with st.sidebar:
+    st.markdown('<h2 style="text-align: center;">⚙️ Settings</h2>', unsafe_allow_html=True)
+    
+    with st.expander("API Keys", expanded=True):
+        st.session_state.api_keys['openai'] = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            value=st.session_state.api_keys['openai'],
+            help="Enter your OpenAI API key"
+        )
+        
+        st.session_state.api_keys['google'] = st.text_input(
+            "Google AI API Key",
+            type="password",
+            value=st.session_state.api_keys['google'],
+            help="Enter your Google AI API key"
+        )
+        
+        st.session_state.api_keys['anthropic'] = st.text_input(
+            "Anthropic API Key",
+            type="password",
+            value=st.session_state.api_keys['anthropic'],
+            help="Enter your Anthropic API key"
+        )
+    
+    with st.expander("Model Settings", expanded=True):
+        st.session_state.temperature = st.slider(
+            "Temperature",
+            min_value=0.0,
+            max_value=1.0,
+            value=st.session_state.temperature,
+            step=0.1,
+            help="Higher values make output more random, lower values more deterministic"
+        )
+        
+        st.session_state.max_tokens = st.slider(
+            "Max Tokens",
+            min_value=100,
+            max_value=4000,
+            value=st.session_state.max_tokens,
+            step=100,
+            help="Maximum number of tokens to generate"
+        )
+    
+    st.markdown("---")
+    st.markdown(
+        """
+        <div class="footer">
+            <p>Made with ❤️ by AI Enthusiasts</p>
+            <p>© 2024 AI Model Playground</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# Main content
+st.markdown('<h1 class="main-header">🤖 AI Model Playground</h1>', unsafe_allow_html=True)
+
+# Model selection
+st.markdown('<h3>Select AI Model</h3>', unsafe_allow_html=True)
+
+# Create columns for model selection cards
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    openai_selected = st.session_state.current_model.startswith('openai')
+    openai_class = "model-card selected-model" if openai_selected else "model-card"
+    
+    st.markdown(f'<div class="{openai_class}">', unsafe_allow_html=True)
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/1024px-OpenAI_Logo.svg.png", width=100)
+    st.markdown("<h4>OpenAI Models</h4>", unsafe_allow_html=True)
+    openai_model = st.selectbox(
+        "Select OpenAI Model",
+        options=["openai/o3-mini"],
+        index=0,
+        key="openai_model"
+    )
+    if st.button("Select OpenAI", key="select_openai"):
+        st.session_state.current_model = openai_model
+        st.experimental_rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col2:
+    deepseek_selected = st.session_state.current_model.startswith('deepseek')
+    deepseek_class = "model-card selected-model" if deepseek_selected else "model-card"
+    
+    st.markdown(f'<div class="{deepseek_class}">', unsafe_allow_html=True)
+    st.image("https://deepseek.com/logo.png", width=100)
+    st.markdown("<h4>DeepSeek Models</h4>", unsafe_allow_html=True)
+    deepseek_model = st.selectbox(
+        "Select DeepSeek Model",
+        options=["deepseek/deepseek-reasoner"],
+        index=0,
+        key="deepseek_model"
+    )
+    if st.button("Select DeepSeek", key="select_deepseek"):
+        st.session_state.current_model = deepseek_model
+        st.experimental_rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col3:
+    google_selected = st.session_state.current_model.startswith('google')
+    google_class = "model-card selected-model" if google_selected else "model-card"
+    
+    st.markdown(f'<div class="{google_class}">', unsafe_allow_html=True)
+    st.image("https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Google_Gemini_AI_logo.max-1000x1000.png", width=100)
+    st.markdown("<h4>Google Models</h4>", unsafe_allow_html=True)
+    google_model = st.selectbox(
+        "Select Google Model",
+        options=["google/gemini-2.0-pro-exp-02-05"],
+        index=0,
+        key="google_model"
+    )
+    if st.button("Select Google", key="select_google"):
+        st.session_state.current_model = google_model
+        st.experimental_rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with st.container():
+    anthropic_selected = st.session_state.current_model.startswith('anthropic')
+    anthropic_class = "model-card selected-model" if anthropic_selected else "model-card"
+    
+    st.markdown(f'<div class="{anthropic_class}">', unsafe_allow_html=True)
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Anthropic_logo.svg/1200px-Anthropic_logo.svg.png", width=100)
+    st.markdown("<h4>Anthropic Models</h4>", unsafe_allow_html=True)
+    anthropic_model = st.selectbox(
+        "Select Anthropic Model",
+        options=["anthropic/sonnet3.7"],
+        index=0,
+        key="anthropic_model"
+    )
+    if st.button("Select Anthropic", key="select_anthropic"):
+        st.session_state.current_model = anthropic_model
+        st.experimental_rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("---")
+
+# Display current model
+st.markdown(f"<h3>Currently using: {st.session_state.current_model}</h3>", unsafe_allow_html=True)
+
+# Chat interface
+st.markdown("<h3>Chat with AI</h3>", unsafe_allow_html=True)
+
+# Display chat history
+display_chat_history()
+
+# Input for new message
+user_input = st.text_area("Type your message here:", key="user_input", height=100)
+
+# Buttons for actions
+col1, col2, col3 = st.columns([1, 1, 1])
+
+with col1:
+    if st.button("Send", key="send_button"):
+        if user_input:
+            # Add user message to chat history
+            st.session_state.chat_history.append({
+                "content": user_input,
+                "is_user": True
+            })
+            
+            # Generate response
+            with st.spinner("AI is thinking..."):
+                response = generate_response(
+                    user_input,
+                    st.session_state.current_model,
+                    st.session_state.temperature,
+                    st.session_state.max_tokens
+                )
+            
+            # Add AI response to chat history
+            st.session_state.chat_history.append({
+                "content": response,
+                "is_user": False
+            })
+            
+            # Clear input
+            st.session_state.user_input = ""
+            
+            # Rerun to update UI
+            st.experimental_rerun()
+
+with col2:
+    if st.button("Clear Chat", key="clear_button"):
+        st.session_state.chat_history = []
         st.experimental_rerun()
 
-    if st.sidebar.button("Delete", key=f"delete_{index}"):
-        password = st.sidebar.text_input("Enter admin password:", type="password")
-        if password == ADMIN_PASSWORD:
-            delete_oneline_message(index)
-            st.sidebar.success("Message deleted!")
-            st.experimental_rerun()
-        else:
-            st.sidebar.warning("Incorrect password!")
+with col3:
+    if st.button("Save Chat", key="save_button"):
+        # Generate a timestamp for the filename
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        filename = f"chat_history_{timestamp}.json"
+        
+        # Convert chat history to JSON
+        chat_json = json.dumps(st.session_state.chat_history, indent=2)
+        
+        # Create a download button
+        st.download_button(
+            label="Download Chat History",
+            data=chat_json,
+            file_name=filename,
+            mime="application/json"
+        )
 
-    st.sidebar.write("---")   
+# Feature tabs
+st.markdown("---")
+st.markdown("<h3>Additional Features</h3>", unsafe_allow_html=True)
+
+tab1, tab2, tab3 = st.tabs(["📝 Text Generation", "🖼️ Image Generation", "📊 Data Analysis"])
+
+with tab1:
+    st.markdown("<h4>Text Generation</h4>", unsafe_allow_html=True)
     
+    text_prompt = st.text_area(
+        "Enter a prompt for text generation:",
+        placeholder="Write a short story about a robot learning to paint...",
+        key="text_prompt",
+        height=100
+    )
     
+    if st.button("Generate Text", key="generate_text_button"):
+        if text_prompt:
+            with st.spinner("Generating text..."):
+                response = generate_response(
+                    text_prompt,
+                    st.session_state.current_model,
+                    st.session_state.temperature,
+                    st.session_state.max_tokens
+                )
+            
+            st.markdown("<div class='stCard'>", unsafe_allow_html=True)
+            st.markdown("<h5>Generated Text:</h5>", unsafe_allow_html=True)
+            st.markdown(response)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+with tab2:
+    st.markdown("<h4>Image Generation</h4>", unsafe_allow_html=True)
+    st.markdown("Note: Currently only available with OpenAI API key")
     
-# Insert the donation button at the desired location
-donation_link = "https://toss.me/dmae97/5000"
-st.markdown(f'''
-<a href="{donation_link}" target="_blank">
-<button style="
-    background: linear-gradient(to right, #FF4500, #FF6347);
-    color:white;
-    padding:10px 20px;
-    font-size:16px;
-    border:none;
-    cursor:pointer;
-    border-radius: 20px;
-    box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease 0s;
-    text-align: center;
-    align-items: center;
-    justify-content: center;
-    outline: none;
-    width: 300x;
-    height: 50x;"
-    onmouseover="this.style.boxShadow='0px 15px 20px rgba(46, 229, 157, 0.4)'; this.style.backgroundColor='#FF6347'; this.style.transform='translateY(-7px)'"
-    onmouseout="this.style.boxShadow='0px 8px 15px rgba(0, 0, 0, 0.1)'; this.style.backgroundColor='#FF4500'; this.style.transform='translateY(0px)'">
-    서비스가 도움이 되셨다면, 작은 응원 부탁드립니다!
-</button></a>''', unsafe_allow_html=True)
+    image_prompt = st.text_area(
+        "Enter a prompt for image generation:",
+        placeholder="A futuristic city with flying cars and neon lights...",
+        key="image_prompt",
+        height=100
+    )
+    
+    image_size = st.selectbox(
+        "Select image size:",
+        options=["1024x1024", "512x512", "256x256"],
+        index=0,
+        key="image_size"
+    )
+    
+    if st.button("Generate Image", key="generate_image_button"):
+        if image_prompt:
+            if not st.session_state.api_keys['openai']:
+                st.error("OpenAI API key is required for image generation")
+        else:
+                with st.spinner("Generating image..."):
+                    try:
+                        client = OpenAI(api_key=st.session_state.api_keys['openai'])
+                        response = client.images.generate(
+                            model="dall-e-3",
+                            prompt=image_prompt,
+                            size=image_size,
+                            quality="standard",
+                            n=1,
+                        )
+                        
+                        image_url = response.data[0].url
+                        
+                        # Display the generated image
+                        st.markdown("<div class='stCard'>", unsafe_allow_html=True)
+                        st.markdown("<h5>Generated Image:</h5>", unsafe_allow_html=True)
+                        st.image(image_url, caption=image_prompt, use_column_width=True, output_format="JPEG", clamp=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
+                        
+                    except Exception as e:
+                        st.error(f"Error generating image: {str(e)}")
+
+with tab3:
+    st.markdown("<h4>Data Analysis</h4>", unsafe_allow_html=True)
+    
+    st.markdown("""
+    Upload a CSV file and ask questions about your data.
+    The AI will help analyze and interpret your data.
+    """)
+    
+    uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+    
+    if uploaded_file is not None:
+        import pandas as pd
+        
+        # Read the CSV file
+        df = pd.read_csv(uploaded_file)
+        
+        # Display the dataframe
+        st.markdown("<h5>Data Preview:</h5>", unsafe_allow_html=True)
+        st.dataframe(df.head())
+        
+        # Data analysis prompt
+        data_question = st.text_area(
+            "Ask a question about your data:",
+            placeholder="What are the key insights from this data?",
+            key="data_question",
+            height=100
+        )
+        
+        if st.button("Analyze Data", key="analyze_data_button"):
+            if data_question:
+                # Create a prompt that includes the data information
+                data_info = f"DataFrame info:\n{df.info()}\n\nDataFrame description:\n{df.describe()}\n\nFirst 5 rows:\n{df.head().to_string()}"
+                prompt = f"I have the following data:\n\n{data_info}\n\nQuestion: {data_question}\n\nPlease analyze this data and answer my question."
+                
+                with st.spinner("Analyzing data..."):
+                    response = generate_response(
+                        prompt,
+                        st.session_state.current_model,
+                        st.session_state.temperature,
+                        st.session_state.max_tokens
+                    )
+                
+                st.markdown("<div class='stCard'>", unsafe_allow_html=True)
+                st.markdown("<h5>Analysis Result:</h5>", unsafe_allow_html=True)
+                st.markdown(response)
+                st.markdown("</div>", unsafe_allow_html=True)
+
+# Footer
+st.markdown("---")
+st.markdown(
+    """
+    <div class="footer">
+        <p>This application allows you to interact with various AI models using your own API keys.</p>
+        <p>No data is stored on our servers - your API keys and conversations remain private.</p>
+        <p>For support or feedback, please contact us at support@aiplayground.example.com</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
